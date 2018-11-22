@@ -3,22 +3,29 @@ const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const OptimizeCssAssetsPlugin = require('optimize-css-assets-webpack-plugin');
+const CleanWebpackPlugin = require('clean-webpack-plugin');
 module.exports = {
+  mode: 'production',
   /**
    * 多入口打包
    */
   entry: {
-    index: './index.js', 
-    list: './list.js'
+    index: './src/index.js', 
+    list: './src/list.js'
   },
   /**
    * 打包输出文件
    */
   output: {
-    publicPath: './',
+    publicPath: './', // 指定html加载资源的路径
     path: path.resolve(__dirname, 'dist'), // 输入打包文件路径
-    filename: './static/js/[name].[hash:8].js' //  多个入口起点输出
+    filename: 'static/js/[name].[chunkhash:8].js', //  多个入口起点输出
+    // chunkFilename: 'static/js/[id].[chunkhash:8].js',
+    chunkFilename: 'static/js/[name].[chunkhash:8].chunk.js', // chunkFilename为按需加载的文件命名
   },
+  /**
+   * 解析
+   */
   resolve: {
     /**
      * 自动补全后缀，在导入依赖文件的时候可以不用写后缀
@@ -31,6 +38,16 @@ module.exports = {
       CSS: './assets/css'
     }
   },
+  devServer: {
+    contentBase: path.resolve(__dirname, "dist"),
+    host: "localhost",
+    port: "8090",
+    open: true, // 开启浏览器
+    hot: true   // 开启热更新
+  },
+  /**
+   * loadoer配置
+   */
   module: {
     rules: [
       /**
@@ -73,7 +90,7 @@ module.exports = {
         loader: 'url-loader',
         options: {
           limit: 50000,
-          name: './static/images/[name].[hash:7].[ext]'
+          name: 'static/images/[name].[hash:7].[ext]'
         }
       },
       /**
@@ -84,7 +101,7 @@ module.exports = {
         loader: 'url-loader',
         options: {
           limit: 50000,
-          name: './static/media/[name].[hash:7].[ext]'
+          name: 'static/media/[name].[hash:7].[ext]'
         }
       },
       /**
@@ -95,17 +112,56 @@ module.exports = {
         loader: 'url-loader',
         options: {
           limit: 50000,
-          name: './static/fonts/[name].[hash:7].[ext]'
+          name: 'static/fonts/[name].[hash:7].[ext]'
         }
       }
     ]
   },
+  performance: {
+    hints: "warning", // 枚举
+    maxAssetSize: 30000000, // 整数类型（以字节为单位）
+    maxEntrypointSize: 50000000, // 整数类型（以字节为单位）
+    assetFilter: function(assetFilename) {
+    // 提供资源文件名的断言函数
+    return assetFilename.endsWith('.css') || assetFilename.endsWith('.js');
+    }
+  },
+  optimization:{  //优化
+      runtimeChunk: {
+        name: 'manifest'
+      },
+      splitChunks:{
+        cacheGroups:{//缓存组，一个对象。它的作用在于，可以对不同的文件做不同的处理
+          vendors:{//node_modules内的依赖库
+              chunks:"all",
+              test: /[\\/]node_modules[\\/]/,
+              name:"vendor",
+              minChunks: 1, //被不同entry引用次数(import),1次的话没必要提取
+              maxInitialRequests: 5,
+              minSize: 0,
+              priority:100,
+          },
+          commons: {// 在多页面中进行配置，再多页面中每个页面间可能会用公用的api，配置文件等
+            // initial 设置提取同步代码中的公用代码
+            chunks: 'initial',
+            // test: 'xxxx', 也可使用 test 选择提取哪些 chunks 里的代码
+            name: 'common',
+            minSize: 0,
+            minChunks: 2
+            },
+          }
+        }
+  },
   plugins: [
+    /**
+     * 正式构建时删除dist目录文件
+     */
+    new CleanWebpackPlugin(['dist']),
     /**
      * 指定编译的html模板，并把打包后的文件自动的引入
      */
     new HtmlWebpackPlugin({
-      chunks:['index'], //chunks:['index'], //html模板自动添加对应chunk的文件, 也就是entry中的key
+      chunks:['manifest', 'vendor', 'common', 'index'], //chunks:['index'], //html模板自动添加对应chunk的文件, 也就是entry中的key
       minify:{
         removeAttributeQuotes: true,
         collapseWhitespace: true //折叠空白区域 也就是压缩代码
@@ -115,7 +171,7 @@ module.exports = {
       template: './index.html'
     }),
     new HtmlWebpackPlugin({
-      chunks:['list'],
+      chunks:['manifest', 'vendor', 'common', 'list'],
       minify:{
         collapseWhitespace:true //折叠空白区域 也就是压缩代码
       },
@@ -127,8 +183,8 @@ module.exports = {
      * 提取CSS样式到指定的文件目录
      */
     new MiniCssExtractPlugin({
-      filename: './static/css/[name].[contenthash:8].css',
-      chunkFilename: '[id].css'
+      filename: 'static/css/[name].[contenthash:8].css',
+      chunkFilename: 'static/css/[name].[contenthash:8].css'
     }),
     /**
      * 压缩CSS代码以及结构，且可以去掉重复的css样式

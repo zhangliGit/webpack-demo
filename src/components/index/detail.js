@@ -13,3 +13,4 @@ export default class Detail extends React.Component {
     )
   }
 }
+console.log('detail')

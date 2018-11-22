@@ -21,7 +21,7 @@ baseConfig.devServer = {
   open: true,
 }
 
-// 插件配置s
+// 插件配置
 baseConfig.plugins.push(
   ...[
     // 热替换插件
