@@ -4,14 +4,14 @@ import Bundle from './bundle.js';
 import { HashRouter as Router, Route, Switch} from 'react-router-dom';
 import ListContainer from 'bundle-loader?lazy&name=index.[name]!./list.js';
 import DetailContainer from 'bundle-loader?lazy&name=index.[name]!./detail.js';
-const List = () => (
+const List = (props) => (
     <Bundle load={ListContainer}>
-        {(List) => <List />}
+        {(List) => <List {...props} />}
     </Bundle>
 )
-const Detail = () => (
+const Detail = (props) => (
   <Bundle load={DetailContainer}>
-      {(Detail) => <Detail />}
+      {(Detail) => <Detail {...props} />}
   </Bundle>
 )
 

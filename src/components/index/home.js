@@ -11,7 +11,7 @@ export default class Home extends React.Component {
     return (
       <div>
         <div style = {{ background: "red" }} onClick = { this.goList.bind(this)}>我是首页哈哈</div>
-        <div onClick = { this.goHtml.bind(this) }>网页娃娃</div>
+        <div onClick = { this.goHtml.bind(this) }>sasas网页娃sdsd娃as</div>
       </div>
     )
   }
